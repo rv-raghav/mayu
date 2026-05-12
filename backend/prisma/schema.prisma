@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  displayName   String
+  avatarUrl     String?
+  passwordHash  String?
+  googleId      String?   @unique
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  polls         Poll[]
+  responses     Response[]
+  refreshTokens RefreshToken[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  familyId   String
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  userAgent  String?
+  ipAddress  String?
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model EmailVerification {
+  id        String    @id @default(cuid())
+  email     String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+}
+
+model Poll {
+  id           String     @id @default(cuid())
+  slug         String     @unique
+  creatorId    String
+  creator      User       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  isAnonymous  Boolean    @default(true)
+  requiresAuth Boolean    @default(false)
+  status       PollStatus @default(DRAFT)
+  expiresAt    DateTime?
+  publishedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  questions    Question[]
+  responses    Response[]
+
+  @@index([creatorId])
+  @@index([slug])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+enum PollStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  PUBLISHED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  RATING
+  TEXT
+  RANKING
+}
+
+model Question {
+  id          String   @id @default(cuid())
+  pollId      String
+  poll        Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text        String
+  type        QuestionType @default(MULTIPLE_CHOICE)
+  isMandatory Boolean  @default(true)
+  order       Int
+  createdAt   DateTime @default(now())
+
+  options     Option[]
+  answers     Answer[]
+
+  @@index([pollId])
+  @@unique([pollId, order])
+}
+
+model Option {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  order      Int
+
+  answers    Answer[]
+
+  @@index([questionId])
+  @@unique([questionId, order])
+}
+
+model Response {
+  id           String   @id @default(cuid())
+  pollId       String
+  poll         Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  respondentId String?
+  respondent   User?    @relation(fields: [respondentId], references: [id], onDelete: SetNull)
+  sessionToken String?
+  submittedAt  DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+
+  answers      Answer[]
+
+  @@index([pollId])
+  @@index([respondentId])
+  @@index([sessionToken])
+  @@unique([pollId, respondentId])
+  @@unique([pollId, sessionToken])
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  responseId String
+  response   Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  optionId   String?
+  option     Option?  @relation(fields: [optionId], references: [id])
+  textValue  String?
+  ratingValue Int?
+  rankingValue Json?
+
+  @@index([responseId])
+  @@index([questionId])
+  @@index([optionId])
+  @@unique([responseId, questionId])
+}
