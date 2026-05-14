@@ -7,6 +7,7 @@ import { ProtectedRoute, PublicRoute } from './components/auth/ProtectedRoute';
 import { Landing } from './pages/Landing';
 import { SignIn } from './pages/auth/SignIn';
 import { SignUp } from './pages/auth/SignUp';
+import { OAuthCallback } from './pages/auth/OAuthCallback';
 import { Dashboard } from './pages/dashboard/Dashboard';
 import { CreatePoll } from './pages/polls/CreatePoll';
 import { PublicPoll } from './pages/polls/PublicPoll';
@@ -36,6 +37,7 @@ function App() {
             <Route element={<PublicRoute />}>
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignUp />} />
+              <Route path="/auth/callback" element={<OAuthCallback />} />
             </Route>
 
             {/* Protected Pages */}
