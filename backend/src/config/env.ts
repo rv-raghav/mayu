@@ -11,7 +11,7 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(3001),
   API_BASE_URL: z.string().url(),
-  FRONTEND_URL: z.string().url(),
+  FRONTEND_URL: z.string().url().transform((u) => u.replace(/\/$/, '')),
 
   // JWT (inline PEM strings — newlines as \n)
   JWT_PRIVATE_KEY: z.string(),
