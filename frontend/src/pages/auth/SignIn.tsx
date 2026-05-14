@@ -24,7 +24,7 @@ export function SignIn() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || (typeof location.state?.from === 'string' ? location.state.from : '/dashboard');
   const successMessage = typeof location.state?.message === 'string' ? location.state.message : null;
 
   const {
