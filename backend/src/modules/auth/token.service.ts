@@ -6,7 +6,6 @@
 
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import fs from 'fs';
 import { env } from '@/config/env';
 import { redis } from '@/config/redis';
 import { prisma } from '@/config/database';
@@ -14,8 +13,8 @@ import { logger } from '@/utils/logger';
 import type { TokenPayload } from '@/types';
 import type { Response, Request } from 'express';
 
-const privateKey = fs.readFileSync(env.JWT_PRIVATE_KEY_PATH);
-const publicKey = fs.readFileSync(env.JWT_PUBLIC_KEY_PATH);
+const privateKey = env.JWT_PRIVATE_KEY;
+const publicKey = env.JWT_PUBLIC_KEY;
 
 const COOKIE_NAME = 'mayu_rt';
 
@@ -142,7 +141,7 @@ export function setRefreshCookie(res: Response, token: string, expiryDays: numbe
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict',
     maxAge: expiryDays * 24 * 60 * 60 * 1000,
     path: '/auth',
   });

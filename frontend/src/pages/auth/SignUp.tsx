@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 const signUpSchema = z.object({
   displayName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -20,7 +20,6 @@ type SignUpValues = z.infer<typeof signUpSchema>;
 
 export function SignUp() {
   const [error, setError] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -35,9 +34,12 @@ export function SignUp() {
     try {
       setError(null);
       const response = await api.post('/auth/register', data);
-      
+
       if (response.data.success) {
-        setIsSuccess(true);
+        navigate('/signin', {
+          replace: true,
+          state: { message: 'Account created successfully. Please sign in.' },
+        });
       }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'An error occurred during registration');
@@ -47,27 +49,6 @@ export function SignUp() {
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/auth/google`;
   };
-
-  if (isSuccess) {
-    return (
-      <PageContainer className="flex flex-1 items-center justify-center py-12">
-        <Card className="w-full max-w-md text-center">
-          <CardContent className="pt-10 pb-8 flex flex-col items-center">
-            <div className="h-16 w-16 rounded-full bg-success/10 flex items-center justify-center mb-6">
-              <CheckCircle2 className="h-8 w-8 text-success" />
-            </div>
-            <h2 className="font-serif text-2xl font-medium text-text-primary mb-2">Check your email</h2>
-            <p className="text-text-secondary mb-8">
-              We've sent a verification link to your email address. Please click the link to activate your account.
-            </p>
-            <Button className="w-full" onClick={() => navigate('/signin')}>
-              Go to Sign In
-            </Button>
-          </CardContent>
-        </Card>
-      </PageContainer>
-    );
-  }
 
   return (
     <PageContainer className="flex flex-1 items-center justify-center py-12">

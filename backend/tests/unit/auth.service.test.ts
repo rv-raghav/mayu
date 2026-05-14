@@ -82,14 +82,14 @@ describe('auth.service', () => {
       ).rejects.toThrow('An account with this email already exists');
     });
 
-    it('should create user and verification token on success', async () => {
+    it('should create a verified user that can sign in immediately', async () => {
       const { prisma } = await import('@/config/database');
       vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null);
       vi.mocked(prisma.user.create).mockResolvedValueOnce({
         id: 'new-user',
         email: 'new@test.com',
         displayName: 'New',
-        emailVerified: false,
+        emailVerified: true,
       } as ReturnType<typeof prisma.user.create> extends Promise<infer T> ? T : never);
 
       const { register } = await import('@/modules/auth/auth.service');
@@ -100,8 +100,8 @@ describe('auth.service', () => {
       });
 
       expect(result.userId).toBe('new-user');
-      expect(result.message).toContain('verify');
-      expect(prisma.emailVerification.create).toHaveBeenCalled();
+      expect(result.message).toContain('sign in');
+      expect(prisma.emailVerification.create).not.toHaveBeenCalled();
     });
   });
 });

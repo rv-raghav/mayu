@@ -1,6 +1,6 @@
 /**
  * Authentication business logic service.
- * Handles registration, login, email verification, password reset.
+ * Handles registration, login, optional email verification, password reset.
  * @module modules/auth/auth.service
  */
 
@@ -15,18 +15,24 @@ import { ErrorCode } from '@/types';
 import { issueAccessToken, issueRefreshToken } from '@/modules/auth/token.service';
 import type { RegisterInput, LoginInput, ResetPasswordInput, UpdateProfileInput } from '@/modules/auth/auth.schema';
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS,
-  },
-});
+/** Lazy SMTP transporter — only created when SMTP env vars are present. */
+function getTransporter(): nodemailer.Transporter | null {
+  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS) {
+    return null;
+  }
+  return nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+    },
+  });
+}
 
 /**
  * Register a new user with email and password.
- * Creates user (emailVerified: false), generates verification token, sends email.
+ * Creates a user that can sign in immediately after registration.
  */
 export async function register(input: RegisterInput): Promise<{ userId: string; message: string }> {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
@@ -41,39 +47,13 @@ export async function register(input: RegisterInput): Promise<{ userId: string; 
       email: input.email,
       displayName: input.displayName,
       passwordHash,
-      emailVerified: true, // Bypassed for local testing without SMTP
+      emailVerified: true,
     },
   });
-
-  // Generate verification token
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  await prisma.emailVerification.create({
-    data: {
-      email: user.email,
-      token: verificationToken,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-    },
-  });
-
-  // Send verification email (fire and forget, log errors)
-  const verifyUrl = `${env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-  transporter
-    .sendMail({
-      from: env.EMAIL_FROM,
-      to: user.email,
-      subject: 'Verify your MaYu account',
-      html: `<p>Welcome to MaYu! Click <a href="${verifyUrl}">here</a> to verify your email.</p>
-             <p>Or copy this link: ${verifyUrl}</p>
-             <p>This link expires in 24 hours.</p>`,
-    })
-    .catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      logger.error('Failed to send verification email', { error: message, userId: user.id });
-    });
 
   logger.info('User registered', { userId: user.id });
 
-  return { userId: user.id, message: 'Check your email to verify your account' };
+  return { userId: user.id, message: 'Account created successfully. You can now sign in.' };
 }
 
 /**
@@ -91,10 +71,6 @@ export async function login(
   const user = await prisma.user.findUnique({ where: { email: input.email } });
   if (!user || !user.passwordHash) {
     throw new AppError(ErrorCode.INVALID_CREDENTIALS, 'Invalid email or password', 401);
-  }
-
-  if (!user.emailVerified) {
-    throw new AppError(ErrorCode.EMAIL_NOT_VERIFIED, 'Please verify your email before logging in', 403);
   }
 
   const passwordValid = await bcrypt.compare(input.password, user.passwordHash);
@@ -171,19 +147,24 @@ export async function resendVerification(email: string): Promise<{ message: stri
   });
 
   const verifyUrl = `${env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-  transporter
-    .sendMail({
-      from: env.EMAIL_FROM,
-      to: user.email,
-      subject: 'Verify your MaYu account',
-      html: `<p>Click <a href="${verifyUrl}">here</a> to verify your email.</p>
-             <p>Or copy this link: ${verifyUrl}</p>
-             <p>This link expires in 24 hours.</p>`,
-    })
-    .catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      logger.error('Failed to send verification email', { error: message, email: user.email });
-    });
+  const mailer = getTransporter();
+  if (mailer) {
+    mailer
+      .sendMail({
+        from: env.EMAIL_FROM,
+        to: user.email,
+        subject: 'Verify your MaYu account',
+        html: `<p>Click <a href="${verifyUrl}">here</a> to verify your email.</p>
+               <p>Or copy this link: ${verifyUrl}</p>
+               <p>This link expires in 24 hours.</p>`,
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        logger.error('Failed to send verification email', { error: message, email: user.email });
+      });
+  } else {
+    logger.warn('SMTP not configured — skipping verification email', { email: user.email });
+  }
 
   return { message: 'If the email exists and is not verified, a verification email has been sent.' };
 }
@@ -208,19 +189,24 @@ export async function forgotPassword(email: string): Promise<{ message: string }
   });
 
   const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-  transporter
-    .sendMail({
-      from: env.EMAIL_FROM,
-      to: user.email,
-      subject: 'Reset your MaYu password',
-      html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>
-             <p>Or copy this link: ${resetUrl}</p>
-             <p>This link expires in 1 hour.</p>`,
-    })
-    .catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      logger.error('Failed to send password reset email', { error: message, userId: user.id });
-    });
+  const mailer = getTransporter();
+  if (mailer) {
+    mailer
+      .sendMail({
+        from: env.EMAIL_FROM,
+        to: user.email,
+        subject: 'Reset your MaYu password',
+        html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>
+               <p>Or copy this link: ${resetUrl}</p>
+               <p>This link expires in 1 hour.</p>`,
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        logger.error('Failed to send password reset email', { error: message, userId: user.id });
+      });
+  } else {
+    logger.warn('SMTP not configured — skipping password reset email', { userId: user.id });
+  }
 
   return { message: 'If the email is registered, a password reset link has been sent.' };
 }

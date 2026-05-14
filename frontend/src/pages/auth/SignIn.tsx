@@ -25,6 +25,7 @@ export function SignIn() {
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/dashboard';
+  const successMessage = typeof location.state?.message === 'string' ? location.state.message : null;
 
   const {
     register,
@@ -64,6 +65,12 @@ export function SignIn() {
         
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {successMessage && (
+              <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                <p>{successMessage}</p>
+              </div>
+            )}
+
             {error && (
               <div className="flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-800 border border-red-200">
                 <AlertCircle className="h-4 w-4 shrink-0" />

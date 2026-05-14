@@ -42,12 +42,12 @@ describe('Auth Endpoints', () => {
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.data.userId).toBeDefined();
-      expect(res.body.data.message).toContain('verify');
+      expect(res.body.data.message).toContain('sign in');
 
       // User should exist in DB
       const user = await prisma.user.findUnique({ where: { email: 'newuser@example.com' } });
       expect(user).not.toBeNull();
-      expect(user!.emailVerified).toBe(false);
+      expect(user!.emailVerified).toBe(true);
     });
 
     it('should reject duplicate email → 409', async () => {
@@ -87,8 +87,10 @@ describe('Auth Endpoints', () => {
         password: 'TestPassword1!',
       });
 
-      expect(res.status).toBe(403);
-      expect(res.body.error.code).toBe('EMAIL_NOT_VERIFIED');
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.user.email).toBe('unverified@example.com');
     });
 
     it('should login with correct credentials → 200 + tokens', async () => {

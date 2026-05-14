@@ -13,9 +13,9 @@ const schema = z.object({
   API_BASE_URL: z.string().url(),
   FRONTEND_URL: z.string().url(),
 
-  // JWT
-  JWT_PRIVATE_KEY_PATH: z.string(),
-  JWT_PUBLIC_KEY_PATH: z.string(),
+  // JWT (inline PEM strings — newlines as \n)
+  JWT_PRIVATE_KEY: z.string(),
+  JWT_PUBLIC_KEY: z.string(),
   JWT_ACCESS_TOKEN_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_TOKEN_EXPIRY_DAYS: z.coerce.number().default(7),
 
@@ -36,11 +36,11 @@ const schema = z.object({
   KAFKA_CONSUMER_GROUP: z.string().default('mayu-response-writers'),
   KAFKA_ENABLED: z.coerce.boolean().default(false),
 
-  // Email
-  SMTP_HOST: z.string(),
+  // Email (optional — app works without email in production)
+  SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
-  SMTP_USER: z.string(),
-  SMTP_PASS: z.string(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().default('MaYu <noreply@mayu.app>'),
 
   // Security
