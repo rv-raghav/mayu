@@ -2,7 +2,7 @@
 
 MaYu is a modern, real-time polling and analytics platform designed with a premium Japanese-inspired minimalist aesthetic. It allows facilitators to create interactive polls, share them securely, and watch audience responses update live on analytics dashboards via WebSockets.
 
-> **Live Demo Video:** [Link to your demo video here]
+> **Live Demo Video:** https://youtu.be/J1_cXW67pwA
 
 ---
 
@@ -20,6 +20,7 @@ MaYu is a modern, real-time polling and analytics platform designed with a premi
 ## 🛠 Tech Stack
 
 **Frontend (Vercel):**
+
 - React 18 & TypeScript
 - Vite (Fast Build Tooling)
 - TailwindCSS (Custom Design Tokens)
@@ -30,6 +31,7 @@ MaYu is a modern, real-time polling and analytics platform designed with a premi
 - Recharts (Data Visualization)
 
 **Backend (Render):**
+
 - Node.js & Express
 - TypeScript
 - Prisma ORM
@@ -44,18 +46,21 @@ MaYu is a modern, real-time polling and analytics platform designed with a premi
 ## 🚀 Getting Started Locally
 
 ### Prerequisites
+
 - Node.js (v20+)
 - PostgreSQL Database
 - Redis Instance (Local or Upstash)
 - Optional: Kafka Cluster (Aiven or Confluent)
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/your-username/mayu.git
 cd mayu
 ```
 
 ### 2. Backend Setup
+
 ```bash
 cd backend
 npm install
@@ -63,6 +68,7 @@ npm install
 
 **Environment Variables:**
 Create a `.env` file in the `backend` directory based on `.env.example`:
+
 ```env
 NODE_ENV=development
 PORT=3001
@@ -84,6 +90,7 @@ GOOGLE_REDIRECT_URI="http://localhost:3001/auth/google/callback"
 ```
 
 **Database Migration & Start:**
+
 ```bash
 npx prisma generate
 npx prisma migrate dev
@@ -91,6 +98,7 @@ npm run dev
 ```
 
 ### 3. Frontend Setup
+
 ```bash
 cd ../frontend
 npm install
@@ -98,12 +106,14 @@ npm install
 
 **Environment Variables:**
 Create a `.env` file in the `frontend` directory:
+
 ```env
 VITE_API_URL=http://localhost:3001
 VITE_SOCKET_URL=http://localhost:3001
 ```
 
 **Start the Development Server:**
+
 ```bash
 npm run dev
 ```
@@ -115,12 +125,14 @@ The frontend will be available at `http://localhost:5173`.
 ## ☁️ Deployment Guide
 
 ### Database (Supabase)
+
 1. Create a PostgreSQL project.
 2. Go to Settings > Database > Connection Pooling.
 3. Grab the **Transaction Mode (port 6543)** URL for `DATABASE_URL`.
 4. Grab the **Session Mode (port 5432)** URL for `DIRECT_DATABASE_URL` (Used only for running `npx prisma migrate deploy` locally).
 
 ### Backend (Render)
+
 1. Connect your GitHub repository to a new Render **Web Service**.
 2. **Root Directory:** `backend`
 3. **Build Command:** `npm install && npx prisma generate && npm run build`
@@ -129,6 +141,7 @@ The frontend will be available at `http://localhost:5173`.
 6. Ensure `PORT` is set to `10000` (Render defaults).
 
 ### Frontend (Vercel)
+
 1. Import the repository into Vercel.
 2. **Framework Preset:** Vite
 3. **Root Directory:** `frontend`
